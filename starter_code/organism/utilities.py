@@ -13,7 +13,7 @@ def get_second_highest_bid(bids, winner):
         assert bids[second_highest_bid_index] == second_highest_bid <= bids[winner]
     return second_highest_bid
 
-def vickrey_utilities(self, utility_args, args):
+def vickrey_utilities(utility_args, args):
     adjusted_gamma = args.gamma**(utility_args.end_time-utility_args.start_time)
     second_highest_bid = get_second_highest_bid(
         utility_args.bids, utility_args.winner)
@@ -48,7 +48,7 @@ def bucket_brigade_utilities(utility_args, args):
     for a_id in utility_args.bids:
         if a_id == utility_args.winner:
             revenue = utility_args.reward + adjusted_gamma*utility_args.next_winner_bid
-            utilities[a_id] = revenue - utility_args.bids[winner]          
+            utilities[a_id] = revenue - utility_args.bids[utility_args.winner]          
         else:
             utilities[a_id] = 0
     return utilities
