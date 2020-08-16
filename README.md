@@ -29,3 +29,6 @@ For the TwoRooms environment, you would need to pre-train the subpolicies first.
 
 ## Visualization
 You can view the training curves in `<exp_folder>/<seed_folder>/group_0/<env-name>_train/quantitative` and you can view visualizations (for environments that have image observations) in `<exp_folder>/<seed_folder>/group_0/<env-name>_test/qualitative`.
+
+## Credits
+The PPO update is based on [this repo](https://github.com/Khrylx/PyTorch-RL.git).
