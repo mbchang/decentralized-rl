@@ -1,4 +1,6 @@
 # Decentralized-RL
+[![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/mbchang/decentralized-rl/blob/master/LICENSE)
+
 This is the code complementing the paper [Decentralized Reinforcment Learning: Global Decision-Making via Local Economic Transactions](https://arxiv.org/abs/2007.02382) by 
 [Michael Chang](http://mbchang.github.io/),
 Sidhant Kaushik,
