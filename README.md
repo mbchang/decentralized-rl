@@ -3,7 +3,7 @@
 
 This is the code complementing the paper [Decentralized Reinforcment Learning: Global Decision-Making via Local Economic Transactions](https://arxiv.org/abs/2007.02382) by 
 [Michael Chang](http://mbchang.github.io/),
-Sidhant Kaushik,
+[Sid Kaushik](https://github.com/sidk99),
 [Matt Weinberg](https://www.cs.princeton.edu/~smattw/),
 [Tom Griffiths](http://cocosci.princeton.edu/tom/tom.php),
 and [Sergey Levine](http://people.eecs.berkeley.edu/~svlevine/).
