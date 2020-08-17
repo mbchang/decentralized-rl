@@ -8,6 +8,10 @@ This is the code complementing the paper [Decentralized Reinforcment Learning: G
 [Tom Griffiths](http://cocosci.princeton.edu/tom/tom.php),
 and [Sergey Levine](http://people.eecs.berkeley.edu/~svlevine/).
 
+Check out the accompanying [blog post](https://bair.berkeley.edu/blog/2020/07/11/auction/).
+
+![sdm](assets/decentralized_gif.gif)
+
 ## Setup
 Set the PYTHONPATH: `export PYTHONPATH=$PWD`.
 
