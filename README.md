@@ -6,7 +6,7 @@ This is the code complementing the paper [Decentralized Reinforcment Learning: G
 [Sid Kaushik](https://github.com/sidk99),
 [Matt Weinberg](https://www.cs.princeton.edu/~smattw/),
 [Tom Griffiths](http://cocosci.princeton.edu/tom/tom.php),
-and [Sergey Levine](http://people.eecs.berkeley.edu/~svlevine/).
+and [Sergey Levine](http://people.eecs.berkeley.edu/~svlevine/), accepted to the International Conference on Machine Learning, 2020.
 
 Check out the accompanying [blog post](https://bair.berkeley.edu/blog/2020/07/11/auction/).
 
