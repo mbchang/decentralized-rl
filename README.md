@@ -73,7 +73,7 @@ PPO: 		`python runner.py --bandittransfer --parent [pretraining PPO exp folder] 
 CVS: 		`python runner.py --bandittransfer_dec --parent [pretraining CVS exp folder] --for-real`  
 PPO factorized: `python runner.py --bandittransfer --factorized --parent [pretraining PPO factorized exp folder] --for-real`
 
-### Invariance (Forgeting) 
+### Invariance (Forgetting) 
 
 #### Pretraining: 
 	
