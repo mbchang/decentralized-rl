@@ -28,7 +28,7 @@ PPO factorized: `python runner.py --linearpretrain_mon --factorized --for-real`
 #### Transfer: 
 
 PPO: 		`python runner.py --linearrest_mon --parent [pretraining PPO exp folder] --for-real`  
-CVS: 		`python runner.py --linearrest_dec --parent [pretraining CVS exp folder] --for-real`  
+CVS: 		`python runner.py --linearrest_decent --parent [pretraining CVS exp folder] --for-real`  
 PPO factorized: `python runner.py --linearrest_mon --factorized --parent [pretraining PPO factorized exp folder] --for-real`  
 
 ### Common Ancestor: 
@@ -42,7 +42,7 @@ PPO factorized: `python runner.py --commonancpretrain_mon --factorized --for-rea
 #### Transfer: 
 
 PPO: 		`python runner.py --commonancrest_mon --parent [pretraining PPO exp folder] --for-real`  
-CVS: 		`python runner.py --commonancrest_dec --parent [pretraining CVS exp folder] --for-real`  
+CVS: 		`python runner.py --commonancrest_decent --parent [pretraining CVS exp folder] --for-real`  
 PPO factorized: `python runner.py --commonancrest_mon --factorized --parent [pretraining PPO factorized exp folder] --for-real`  
 
 ### Common Descendant: 
@@ -56,6 +56,39 @@ PPO factorized: `python runner.py --commondecpretrain_mon --factorized --for-rea
 #### Transfer: 
 
 PPO: 		`python runner.py --commondecrest_mon --parent [pretraining PPO exp folder] --for-real`  
-CVS: 		`python runner.py --commondecrest_dec --parent [pretraining CVS exp folder] --for-real`  
-PPO factorized: `python runner.py --commondecrest_mon --factorized --parent [pretraining PPO factorized exp folder] --for-real`  
+CVS: 		`python runner.py --commondecrest_decent --parent [pretraining CVS exp folder] --for-real`  
+PPO factorized: `python runner.py --commondecrest_mon --factorized --parent [pretraining PPO factorized exp folder] --for-real`
 
+### Bandit: 
+
+#### Pretraining: 
+	
+PPO:            `python runner.py --bandit --for-real`  
+CVS:            `python runner.py --bandit_dec --for-real`  
+PPO factorized: `python runner.py --bandit --factorized --for-real`  
+
+#### Transfer: 
+
+PPO: 		`python runner.py --bandittransfer --parent [pretraining PPO exp folder] --for-real`  
+CVS: 		`python runner.py --bandittransfer_dec --parent [pretraining CVS exp folder] --for-real`  
+PPO factorized: `python runner.py --bandittransfer --factorized --parent [pretraining PPO factorized exp folder] --for-real`
+
+### Invariance (Forgeting) 
+
+#### Pretraining: 
+	
+PPO:            `python runner.py --invarV1_mon --for-real`  
+CVS:            `python runner.py --invarV1_decent --for-real`  
+PPO factorized: `python runner.py --invarV1_mon --factorized --for-real`  
+
+#### Transfer V1: 
+
+PPO: 		`python runner.py --invarV2_mon --parent [pretraining PPO exp folder] --for-real`  
+CVS: 		`python runner.py --invarV2_decent --parent [pretraining CVS exp folder] --for-real`  
+PPO factorized: `python runner.py --invarV2_mon --factorized --parent [pretraining PPO factorized exp folder] --for-real`
+
+#### Transfer V2: 
+
+PPO: 		`python runner.py --invarV1Prime_mon --parent [pretraining PPO exp folder] --for-real`  
+CVS: 		`python runner.py --invarV1Prime_decent --parent [pretraining CVS exp folder] --for-real`  
+PPO factorized: `python runner.py --invarV1Prime_mon --factorized --parent [pretraining PPO factorized exp folder] --for-real`
