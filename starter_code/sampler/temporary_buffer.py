@@ -1,5 +1,7 @@
 
 import numpy as np
+from starter_code.infrastructure.utils import from_onehot
+
 
 class StatsCollector:
     def __init__(self):
@@ -7,6 +9,9 @@ class StatsCollector:
 
     def reset(self):
         self.data = dict(steps=0, episode_datas=[])
+
+    def __getitem__(self, idx):
+        return self.data['episode_datas'][idx]
 
     def append(self, episode_data):
         self.data['steps'] += len(episode_data)
@@ -82,4 +87,59 @@ class DecentralizedStatsCollector(StatsCollector):
         stats = super(DecentralizedStatsCollector, self).bundle_batch_stats()
         agent_stats = self._bundle_agent_payoff_bid(summary_dict=self.data)
         stats = dict({**stats, **agent_stats})
+        return stats
+
+class CentralizedStatsCollector(StatsCollector):
+
+    def _summarize_agent_action_dist(self, a_id, step, summary_dict):
+        q = a_id not in summary_dict['action_dist']
+        # assert (p and q) or (not p and not q)
+
+        if q:
+            summary_dict['action_dist'][a_id] = []
+        summary_dict['action_dist'][a_id].append(step.action_dist[a_id])
+
+    def summarize(self):
+        StatsCollector.summarize(self)
+        # import pdb; pdb.set_trace()
+        if not hasattr(self, 'hrl'):
+            # if self.hrl:
+            def get_state_dim(episode_datas):
+                state_dim = episode_datas[0][0].state.shape
+                assert len(state_dim) == 1
+                state_dim = state_dim[0]
+                return state_dim
+
+
+            self.data['state_stats'] = {}
+            state_dim = get_state_dim(self.data['episode_datas'])
+            # for episode_data in self.data['episode_datas']:
+            #     for i, step in enumerate(episode_data):
+            #         for a_id in step.bids:
+            #             self._summarize_agent_payoff_bid(
+            #                 a_id=a_id, step=step, summary_dict=self.data)
+            for episode_data in self.data['episode_datas']:
+                for i, step in enumerate(episode_data):
+                    assert len(step.state) == state_dim
+                    state = from_onehot(step.state, state_dim)
+                    if state not in self.data['state_stats']:
+                        self.data['state_stats'][state] = dict(action_dist={})
+                    for a_id in range(len(step.action_dist)):
+                        self._summarize_agent_action_dist(
+                            a_id=a_id, step=step, summary_dict=self.data['state_stats'][state])
+
+    def _bundle_agent_action_dist(self, summary_dict):
+        agent_stats = {}
+        for a_id in summary_dict['action_dist']:
+            a_key = 'agent_{}'.format(a_id)
+            agent_stats[a_key] = {
+                **self.log_metrics(np.array(summary_dict['action_dist'][a_id]), 'action_dist')}
+        return agent_stats
+
+    def bundle_batch_stats(self):
+        stats = StatsCollector.bundle_batch_stats(self)
+        state_stats = {}
+        for state in self.data['state_stats']:
+            state_stats[state] = self._bundle_agent_action_dist(summary_dict=self.data['state_stats'][state])
+        stats['state_stats'] = state_stats
         return stats

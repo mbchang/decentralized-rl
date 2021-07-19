@@ -109,6 +109,9 @@ class Sampler():
         self.organism = organism
         self.deterministic = deterministic
         self.step_info_builder = step_info
+    
+    def set_deterministic(self, deterministic):
+        self.deterministic = deterministic
 
     def begin_episode(self, env):
         state = env.reset()

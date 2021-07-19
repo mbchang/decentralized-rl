@@ -12,6 +12,7 @@ from starter_code.infrastructure.log import MultiBaseLogger, env_manager_switch
 from starter_code.infrastructure.multitask import construct_task_progression, task_prog_spec_multi
 from starter_code.environment.env_config import EnvRegistry as ER
 from starter_code.experiment.experiment import Experiment
+from starter_code.experiment.experiments import TabularExperimentCentralized
 from starter_code.learner.learners import CentralizedLearner
 from starter_code.modules.policies import DiscretePolicy, IsotropicGaussianPolicy, DiscreteCNNPolicy
 from starter_code.modules.value_function import SimpleValueFn, CNNValueFn
@@ -202,7 +203,10 @@ class BaseLauncher:
         task_progression = cls.create_task_progression(logger, args)
         organism = cls.create_organism(device, task_progression, args)
         rl_alg = rlalg_switch(args.alg_name)(device=device, args=args)
-        experiment = Experiment(
+        envtype = cls.env_registry.get_env_type(args.env_name[0])
+        args.envtype=envtype
+        if envtype == 'tab':
+            experiment = TabularExperimentCentralized(
             learner=CentralizedLearner(
                 organism=organism,
                 rl_alg=rl_alg,
@@ -213,7 +217,20 @@ class BaseLauncher:
             task_progression=task_progression,
             logger=logger,
             args=args)
+        else:
+            experiment = Experiment(
+                learner=CentralizedLearner(
+                    organism=organism,
+                    rl_alg=rl_alg,
+                    logger=logger,
+                    device=device,
+                    args=args,
+                    ),
+                task_progression=task_progression,
+                logger=logger,
+                args=args)
         experiment.main_loop(max_epochs=args.max_epochs)
+        
 
 if __name__ == '__main__':
     launcher = BaseLauncher()

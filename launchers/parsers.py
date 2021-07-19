@@ -12,6 +12,7 @@ def build_parser(auction=False, transformation='literal', pretrain_primitives=Fa
     parser.add_argument('--debug', action='store_true', help='turns on debug mode')
     parser.add_argument('--parallel_collect', action='store_true', help='collect data with multiple workers')
     parser.add_argument('--expid', type=str, default='9999999', help='specify id of experiment')
+    parser.add_argument('--pretrain', type=int, default=int(1e7), help='limit intial training')
 
     if auction:
         parser.add_argument('--auctiontype', type=str, default='ccv', help='type of auction mechanism: ccv | v | bb')
@@ -25,8 +26,9 @@ def build_parser(auction=False, transformation='literal', pretrain_primitives=Fa
             parser.add_argument('--freeze_primitives', action='store_true', help='freezee the weights of subpolicies')
         else:
             parser.add_argument('--num_primitives', type=int, required=True, help='number of subpolicies to initialize')
-        if transfer:
-            parser.add_argument('--ckpts', nargs='+', type=yaml.safe_load, required=True, help='checkpoint of society to transfer from')
+    if transfer:
+        parser.add_argument('--ckpts', nargs='+', type=yaml.safe_load, required=True, help='checkpoint of society to transfer from')
+    
     elif transformation == 'function':
         parser.add_argument('--num_primitives', type=int, default=1, help='number of functions to initialize')
     return parser

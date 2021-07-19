@@ -7,14 +7,41 @@ import ujson
 import time
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--debug', action='store_true')
 parser.add_argument('--bandit', action='store_true')
-parser.add_argument('--chain', action='store_true')
-parser.add_argument('--duality', action='store_true')
-parser.add_argument('--mental-rotation', action='store_true')
-parser.add_argument('--tworooms-subpolicies', action='store_true')
-parser.add_argument('--tworooms-pretrain-task', action='store_true')
-parser.add_argument('--tworooms-transfer-task', action='store_true')
+parser.add_argument('--bandittransfer', action='store_true')
+parser.add_argument('--bandit_dec', action='store_true')
+parser.add_argument('--bandittransfer_dec', action='store_true')
+parser.add_argument('--invarV1_decent', action='store_true')
+parser.add_argument('--invarV2_decent', action='store_true')
+parser.add_argument('--invarV1Prime_decent', action='store_true')
+parser.add_argument('--invarV1_mon', action='store_true')
+parser.add_argument('--invarV2_mon', action='store_true')
+parser.add_argument('--invarV1Prime_mon', action='store_true')
+parser.add_argument('--commonancpretrain_mon', action='store_true')
+parser.add_argument('--commondecpretrain_mon', action='store_true')
+parser.add_argument('--commonancpretrain_dec', action='store_true')
+parser.add_argument('--commondecpretrain_dec', action='store_true')
+parser.add_argument('--commonancrest_mon', action='store_true')
+parser.add_argument('--commondecrest_mon', action='store_true')
+parser.add_argument('--commonancrest_decent', action='store_true')
+parser.add_argument('--commondecrest_decent', action='store_true')
+parser.add_argument('--linearpretrain_mon', action='store_true')
+parser.add_argument('--linearpretrain_dec', action='store_true')
+parser.add_argument('--linearrest_mon', action='store_true')
+parser.add_argument('--linearrest_decent', action='store_true')
+parser.add_argument('--shared_ccv', action='store_true')
+parser.add_argument('--offpolicy', action='store_true')
+parser.add_argument('--vlr', action='store_true')
+parser.add_argument('--factorized', action='store_true')
 parser.add_argument('--for-real', action='store_true')
+parser.add_argument('--parent', type=str, default='', help='parent of exp for transfer')
+
+
+
+# parser.add_argument('--parent', default=[], action="append")
+
+
 args = parser.parse_args()
 
 def product_dict(**kwargs):
@@ -96,7 +123,7 @@ class RunnerWithIDs(Runner):
             j = 0
 
             for flag_dict in self.product_dict(**self.flags):
-                command = self.command_prefix()
+                command = self.command_prefix(i)
                 command = self.append_flags_to_command(command, flag_dict)
 
                 # add exp_id: one exp_id for each flag_dict.
@@ -122,11 +149,71 @@ class RunnerWithIDs(Runner):
                 print('Dry-run')
 
 
-def run_bandit():
+def run_debug():
     r = RunnerWithIDs(command='python launchers/decentralized.py', gpus=[])
     r.add_flag('env-name', ['Bandit'])
     r.add_flag('ado', [True])
     r.add_flag('subroot', ['bandit'])
+    r.generate_commands(execute=args.for_real)
+
+def run_bandit():
+    r = RunnerWithIDs(command='python launchers/monolithic.py', gpus=[])
+    r.add_flag('env-name', ['Bandit'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    r.add_flag('pretrain', [250]) #,1250, 6250, 31250])
+    if args.factorized:
+        r.add_flag('factorized', [True])
+    if args.parent != '':
+        parent_string = '\"{parent: ' + args.parent + '}\"'
+        r.add_flag('ckpts', [parent_string])
+    r.generate_commands(execute=args.for_real)
+
+def run_bandit_transfer():
+    r = RunnerWithIDs(command='python launchers/transfer.py', gpus=[])
+    r.add_flag('env-name', ['BanditTransfer'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    if args.factorized:
+        r.add_flag('factorized', [True])
+    if args.parent != '':
+        # parent_string = '\"{parent: ' + args.parent + '}\"'
+        # r.add_flag('ckpts', [parent_string])
+        parentlst = list(args.parent.split(" ")) 
+        parentlstformatted = ['\"{parent: ' + par + '}\"' for par in parentlst]
+        r.add_flag('ckpts', [parstr for parstr in parentlstformatted])
+    r.generate_commands(execute=args.for_real)
+
+def run_bandit_dec():
+    r = RunnerWithIDs(command='python launchers/decentralized.py', gpus=[])
+    r.add_flag('env-name', ['Bandit'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    r.add_flag('pretrain', [250])#, 1250, 6250, 31250])
+    # if args.factorized:
+    #     r.add_flag('factorized', [True])
+    if args.parent != '':
+        parent_string = '\"{parent: ' + args.parent + '}\"'
+        r.add_flag('ckpts', [parent_string])
+    r.generate_commands(execute=args.for_real)
+
+def run_bandit_transfer_dec():
+    r = RunnerWithIDs(command='python launchers/vickrey_transfer.py', gpus=[])
+    r.add_flag('env-name', ['BanditTransfer'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    # if args.factorized:
+    #     r.add_flag('factorized', [True])
+    if args.parent != '':
+        # parent_string = '\"{parent: ' + args.parent + '}\"'
+        # r.add_flag('ckpts', [parent_string])
+        parentlst = list(args.parent.split(" ")) 
+        parentlstformatted = ['\"{parent: ' + par + '}\"' for par in parentlst]
+        r.add_flag('ckpts', [parstr for parstr in parentlstformatted])
     r.generate_commands(execute=args.for_real)
 
 def run_chain():
@@ -136,114 +223,715 @@ def run_chain():
     r.add_flag('subroot', ['chain'])
     r.generate_commands(execute=args.for_real)
 
-def run_duality():
+
+
+def run_invarV1_decent():
     r = RunnerWithIDs(command='python launchers/decentralized.py', gpus=[])
-    r.add_flag('env-name', ['Duality'])
+    r.add_flag('env-name', ['InvarV1'])
     r.add_flag('parallel_collect', [True])
-    r.add_flag('subroot', ['duality'])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    r.add_flag('pretrain', [1250])
+    if args.parent != '':
+        parent_string = '\"{parent: ' + args.parent + '}\"'
+        r.add_flag('ckpts', [parent_string])
+    if args.shared_ccv:
+        r.add_flag('share-encoder', [True])
+    if args.offpolicy:
+        r.add_flag('offpolicy', [True])
+        r.add_flag('alg-name', ['sac'])
+    if args.vlr: 
+        # r.add_flag('vlr', [1e-3, 7e-4, 5e-4, 3e-4])
+        r.add_flag('vlr', [1e-3])
     r.generate_commands(execute=args.for_real)
 
-def run_mental_rotation():
-    r = RunnerWithIDs(command='python -W ignore launchers/decentralized_computation.py', gpus=[0])
-    r.add_flag('num_primitives', [6])
+def run_invarV1Prime_decent():
+    parent_string = '\"{parent: ' + args.parent + '}\"'
+    r = RunnerWithIDs(command='python launchers/vickrey_transfer.py', gpus=[])
+    r.add_flag('env-name', ['InvarV1'])
     r.add_flag('parallel_collect', [True])
-    r.add_flag('env-name', ['MentalRotation'])
-    r.add_flag('subroot', ['mental_rotation'])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    r.add_flag('ckpts', [parent_string])
+    # r.add_flag('pretrain', [1250])
+    if args.parent != '':
+        # parent_string = '\"{parent: ' + args.parent + '}\"'
+        # r.add_flag('ckpts', [parent_string])
+        parentlst = list(args.parent.split(" ")) 
+        parentlstformatted = ['\"{parent: ' + par + '}\"' for par in parentlst]
+        r.add_flag('ckpts', [parstr for parstr in parentlstformatted])
+    if args.shared_ccv:
+        r.add_flag('share-encoder', [True])
+    if args.offpolicy:
+        r.add_flag('offpolicy', [True])
+        r.add_flag('alg-name', ['sac'])
+    if args.vlr: 
+        # r.add_flag('vlr', [1e-3, 7e-4, 5e-4, 3e-4])
+        r.add_flag('vlr', [1e-3])
     r.generate_commands(execute=args.for_real)
 
-def run_tworooms_subpolicies():
-    r = RunnerWithIDs(command='python -W ignore launchers/monolithic.py', gpus=[0])
-    r.add_flag('env-name', ['BabyAI-RedGoalTwoRoomTest-v0', 'BabyAI-GreenGoalTwoRoomTest-v0', 'BabyAI-BlueGoalTwoRoomTest-v0'])
+def run_invarV2_decent():
+    parent_string = '\"{parent: ' + args.parent + '}\"'
+    r = RunnerWithIDs(command='python launchers/vickrey_transfer.py', gpus=[])
+    r.add_flag('env-name', ['InvarV2'])
     r.add_flag('parallel_collect', [True])
-    r.add_flag('subroot', ['two_rooms'])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    r.add_flag('ckpts', [parent_string])
+    r.add_flag('pretrain', [1250, 6250, 31250])
+    if args.shared_ccv:
+        r.add_flag('share-encoder', [True])
+    if args.offpolicy:
+        r.add_flag('offpolicy', [True])
+        r.add_flag('alg-name', ['sac'])
+    if args.vlr: 
+        # r.add_flag('vlr', [1e-3, 7e-4, 5e-4, 3e-4])
+        r.add_flag('vlr', [1e-3])
+
     r.generate_commands(execute=args.for_real)
 
-def run_tworooms_pretrain_task():
-    primitive_expids = [
-        'i9138938i_BAI-RGTRT-0_ppo',
-        'i2713858i_BAI-GGTRT-0_ppo',
-        'i0342222i_BAI-BGTRT-0_ppo',
-    ]
-    raise NotImplementedError('Replace primitive_expids with the corresponding folder names generated by pretrain_tworooms_subpolicies')
-    primitive_string = ' '.join(ujson.dumps(dict(primitive=expfolder)) for expfolder in primitive_expids).replace('"', '').replace('{', '\"{').replace('}', '}\"').replace(':', ': ')
-    """
-    An example command would be:
-    `python launchers/hierarchical_monolithic_pretrained_primitives.py --env-name BabyAI-GreenGoalTwoRoomTest-v0 --freeze_primitives --primitives "{primitive: i9138938i_BAI-RGTRT-0_ppo}" "{primitive: i2713858i_BAI-GGTRT-0_ppo}" "{primitive: i0342222i_BAI-BGTRT-0_ppo}" --subroot tworooms`
-    """
-    r = RunnerWithIDs(command='python launchers/hierarchical_monolithic_pretrained_primitives.py', gpus=[0])
-    r.add_flag('env-name', ['BabyAI-GreenTwoRoomTest-v0'])
-    r.add_flag('freeze_primitives', [True])
+def run_invarV1_mon():
+    r = RunnerWithIDs(command='python launchers/monolithic.py', gpus=[])
+    r.add_flag('env-name', ['InvarV1'])
     r.add_flag('parallel_collect', [True])
-    r.add_flag('primitives', [primitive_string])
-    r.add_flag('subroot', ['two_rooms'])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    r.add_flag('pretrain', [1250])    
+    if args.factorized:
+        r.add_flag('factorized', [True])
+    if args.parent != '':
+        parent_string = '\"{parent: ' + args.parent + '}\"'
+        r.add_flag('ckpts', [parent_string])
     r.generate_commands(execute=args.for_real)
 
-    """
-    An example command would be:
-    `python launchers/hierarchical_decentralized_pretrained_primitives.py --env-name BabyAI-GreenGoalTwoRoomTest-v0 --freeze_primitives --primitives "{primitive: i9138938i_BAI-RGTRT-0_ppo}" "{primitive: i2713858i_BAI-GGTRT-0_ppo}" "{primitive: i0342222i_BAI-BGTRT-0_ppo}" --subroot tworooms`
-    """
-    r = RunnerWithIDs(command='python launchers/hierarchical_decentralized_pretrained_primitives.py', gpus=[0])
-    r.add_flag('env-name', ['BabyAI-GreenTwoRoomTest-v0'])
-    r.add_flag('freeze_primitives', [True])
+def run_invarV2_mon():
+    parent_string = '\"{parent: ' + args.parent + '}\"'
+    r = RunnerWithIDs(command='python launchers/transfer.py', gpus=[])
+    r.add_flag('env-name', ['InvarV2'])
     r.add_flag('parallel_collect', [True])
-    r.add_flag('primitives', [primitive_string])
-    r.add_flag('subroot', ['two_rooms'])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    r.add_flag('pretrain', [1250, 6250, 31250])
+    if args.factorized:
+        r.add_flag('factorized', [True])
+    r.add_flag('ckpts', [parent_string])
+    r.generate_commands(execute=args.for_real)
+
+def run_invarV1Prime_mon():
+    # import pdb; pdb.set_trace()
+    # for parent in args.parent: 
+    #     parent_string = '\"{parent: ' + parent + '}\"'
+    #     parentstrlst.append(parent_string)
+    r = RunnerWithIDs(command='python launchers/transfer.py', gpus=[])
+    r.add_flag('env-name', ['InvarV1'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    if args.factorized:
+        r.add_flag('factorized', [True])
+    parentlst = list(args.parent.split(" ")) 
+    parentlstformatted = ['\"{parent: ' + par + '}\"' for par in parentlst]
+    r.add_flag('ckpts', [parstr for parstr in parentlstformatted])
+    r.generate_commands(execute=args.for_real)
+
+def run_commonanc_pretrain_mon():
+    r = RunnerWithIDs(command='python launchers/monolithic.py', gpus=[])
+    r.add_flag('env-name', ['ComAncAB ComAncAC'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    r.add_flag('pretrain', [2450])    
+    if args.factorized:
+        r.add_flag('factorized', [True])
+    if args.parent != '':
+        parent_string = '\"{parent: ' + args.parent + '}\"'
+        r.add_flag('ckpts', [parent_string])
+    r.generate_commands(execute=args.for_real)
+
+def run_commonanc_pretrain_dec():
+    r = RunnerWithIDs(command='python launchers/decentralized.py', gpus=[])
+    r.add_flag('env-name', ['ComAncAB ComAncAC'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    r.add_flag('pretrain', [2450])    
+    if args.parent != '':
+        parent_string = '\"{parent: ' + args.parent + '}\"'
+        r.add_flag('ckpts', [parent_string])
+    if args.shared_ccv:
+        print('gogogogo')
+        r.add_flag('share-encoder', [True])
+    if args.offpolicy:
+        r.add_flag('offpolicy', [True])
+        r.add_flag('alg-name', ['sac'])
+    if args.vlr: 
+        # r.add_flag('vlr', [1e-3, 7e-4, 5e-4, 3e-4])
+        r.add_flag('vlr', [1e-3])
+    r.generate_commands(execute=args.for_real)
+
+def run_commonanc_rest_mon():
+
+    r = RunnerWithIDs(command='python launchers/transfer.py', gpus=[])
+    r.add_flag('env-name', ['ComAncDB ComAncDC'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    if args.factorized:
+        r.add_flag('factorized', [True])
+    if args.parent != '':
+        parent_string = '\"{parent: ' + args.parent + '}\"'
+        r.add_flag('ckpts', [parent_string])
+    r.generate_commands(execute=args.for_real)
+
+    r = RunnerWithIDs(command='python launchers/transfer.py', gpus=[])
+    r.add_flag('env-name', ['ComAncAB ComAncAE'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    if args.factorized:
+        r.add_flag('factorized', [True])
+    if args.parent != '':
+        parent_string = '\"{parent: ' + args.parent + '}\"'
+        r.add_flag('ckpts', [parent_string])
+    r.generate_commands(execute=args.for_real)
+
+    r = RunnerWithIDs(command='python launchers/transfer.py', gpus=[])
+    r.add_flag('env-name', ['ComAncAE ComAncAF'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    if args.factorized:
+        r.add_flag('factorized', [True])
+    if args.parent != '':
+        parent_string = '\"{parent: ' + args.parent + '}\"'
+        r.add_flag('ckpts', [parent_string])
+    r.generate_commands(execute=args.for_real)
+
+def run_commonanc_rest_decent():
+
+    r = RunnerWithIDs(command='python launchers/vickrey_transfer.py', gpus=[])
+    r.add_flag('env-name', ['ComAncDB ComAncDC'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('cpu', [True])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('seed', [i for i in range(10)])
+    if args.parent != '':
+        parent_string = '\"{parent: ' + args.parent + '}\"'
+        r.add_flag('ckpts', [parent_string])
+    if args.shared_ccv:
+        r.add_flag('share-encoder', [True])
+    if args.offpolicy:
+        r.add_flag('offpolicy', [True])
+        r.add_flag('alg-name', ['sac'])
+    if args.vlr: 
+        # r.add_flag('vlr', [1e-3, 7e-4, 5e-4, 3e-4])
+        r.add_flag('vlr', [1e-3])
+    r.generate_commands(execute=args.for_real)
+
+    r = RunnerWithIDs(command='python launchers/vickrey_transfer.py', gpus=[])
+    r.add_flag('env-name', ['ComAncAB ComAncAE'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('cpu', [True])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('seed', [i for i in range(10)])
+    if args.parent != '':
+        parent_string = '\"{parent: ' + args.parent + '}\"'
+        r.add_flag('ckpts', [parent_string])
+    if args.shared_ccv:
+        r.add_flag('share-encoder', [True])
+    if args.offpolicy:
+        r.add_flag('offpolicy', [True])
+        r.add_flag('alg-name', ['sac'])
+    if args.vlr: 
+        # r.add_flag('vlr', [1e-3, 7e-4, 5e-4, 3e-4])
+        r.add_flag('vlr', [1e-3])
+    r.generate_commands(execute=args.for_real)
+
+    r = RunnerWithIDs(command='python launchers/vickrey_transfer.py', gpus=[])
+    r.add_flag('env-name', ['ComAncAE ComAncAF'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('cpu', [True])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('seed', [i for i in range(10)])
+    if args.parent != '':
+        parent_string = '\"{parent: ' + args.parent + '}\"'
+        r.add_flag('ckpts', [parent_string])
+    if args.shared_ccv:
+        r.add_flag('share-encoder', [True])
+    if args.offpolicy:
+        r.add_flag('offpolicy', [True])
+        r.add_flag('alg-name', ['sac'])
+    if args.vlr: 
+        # r.add_flag('vlr', [1e-3, 7e-4, 5e-4, 3e-4])
+        r.add_flag('vlr', [1e-3])
+    r.generate_commands(execute=args.for_real)
+
+def run_commondec_pretrain_mon():
+    r = RunnerWithIDs(command='python launchers/monolithic.py', gpus=[])
+    r.add_flag('env-name', ['ComDescAC ComDescBC'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    r.add_flag('pretrain', [2450])    
+    if args.factorized:
+        r.add_flag('factorized', [True])
+    if args.parent != '':
+        parent_string = '\"{parent: ' + args.parent + '}\"'
+        r.add_flag('ckpts', [parent_string])
+    r.generate_commands(execute=args.for_real)
+    
+def run_commondec_pretrain_dec():
+    r = RunnerWithIDs(command='python launchers/decentralized.py', gpus=[])
+    r.add_flag('env-name', ['ComDescAC ComDescBC'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    r.add_flag('pretrain', [2450])    
+    if args.parent != '':
+        parent_string = '\"{parent: ' + args.parent + '}\"'
+        r.add_flag('ckpts', [parent_string])
+    if args.shared_ccv:
+        r.add_flag('share-encoder', [True])
+    if args.offpolicy:
+        r.add_flag('offpolicy', [True])
+        r.add_flag('alg-name', ['sac'])
+    if args.vlr: 
+        # r.add_flag('vlr', [1e-3, 7e-4, 5e-4, 3e-4])
+        r.add_flag('vlr', [1e-3])
+    r.generate_commands(execute=args.for_real)
+
+def run_commondec_rest_mon():
+    r = RunnerWithIDs(command='python launchers/transfer.py', gpus=[])
+    r.add_flag('env-name', ['ComDescAF ComDescBF'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    if args.factorized:
+        r.add_flag('factorized', [True])
+    if args.parent != '':
+        parent_string = '\"{parent: ' + args.parent + '}\"'
+        r.add_flag('ckpts', [parent_string])
+    r.generate_commands(execute=args.for_real)
+
+    r = RunnerWithIDs(command='python launchers/transfer.py', gpus=[])
+    r.add_flag('env-name', ['ComDescDC ComDescEC'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    if args.factorized:
+        r.add_flag('factorized', [True])
+    if args.parent != '':
+        parent_string = '\"{parent: ' + args.parent + '}\"'
+        r.add_flag('ckpts', [parent_string])
+    r.generate_commands(execute=args.for_real)
+
+    r = RunnerWithIDs(command='python launchers/transfer.py', gpus=[])
+    r.add_flag('env-name', ['ComDescAC ComDescDC'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    if args.factorized:
+        r.add_flag('factorized', [True])
+    if args.parent != '':
+        parent_string = '\"{parent: ' + args.parent + '}\"'
+        r.add_flag('ckpts', [parent_string])
+    r.generate_commands(execute=args.for_real)
+
+def run_commondec_rest_decent():
+
+    r = RunnerWithIDs(command='python launchers/vickrey_transfer.py', gpus=[])
+    r.add_flag('env-name', ['ComDescAF ComDescBF'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('cpu', [True])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('seed', [i for i in range(10)])
+    if args.parent != '':
+        parent_string = '\"{parent: ' + args.parent + '}\"'
+        r.add_flag('ckpts', [parent_string])
+    if args.shared_ccv:
+        r.add_flag('share-encoder', [True])
+    if args.offpolicy:
+        r.add_flag('offpolicy', [True])
+        r.add_flag('alg-name', ['sac'])
+    if args.vlr: 
+        # r.add_flag('vlr', [1e-3, 7e-4, 5e-4, 3e-4])
+        r.add_flag('vlr', [1e-3])
+    r.generate_commands(execute=args.for_real)
+
+    r = RunnerWithIDs(command='python launchers/vickrey_transfer.py', gpus=[])
+    r.add_flag('env-name', ['ComDescDC ComDescEC'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('cpu', [True])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('seed', [i for i in range(10)])
+    if args.parent != '':
+        parent_string = '\"{parent: ' + args.parent + '}\"'
+        r.add_flag('ckpts', [parent_string])
+    if args.shared_ccv:
+        r.add_flag('share-encoder', [True])
+    if args.offpolicy:
+        r.add_flag('offpolicy', [True])
+        r.add_flag('alg-name', ['sac'])
+    if args.vlr: 
+        # r.add_flag('vlr', [1e-3, 7e-4, 5e-4, 3e-4])
+        r.add_flag('vlr', [1e-3])
+    r.generate_commands(execute=args.for_real)  
+
+    r = RunnerWithIDs(command='python launchers/vickrey_transfer.py', gpus=[])
+    r.add_flag('env-name', ['ComDescAC ComDescDC'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('cpu', [True])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('seed', [i for i in range(10)])
+    if args.parent != '':
+        parent_string = '\"{parent: ' + args.parent + '}\"'
+        r.add_flag('ckpts', [parent_string])
+    if args.shared_ccv:
+        r.add_flag('share-encoder', [True])
+    if args.offpolicy:
+        r.add_flag('offpolicy', [True])
+        r.add_flag('alg-name', ['sac'])
+    if args.vlr: 
+        # r.add_flag('vlr', [1e-3, 7e-4, 5e-4, 3e-4])
+        r.add_flag('vlr', [1e-3])
+    r.generate_commands(execute=args.for_real)
+
+def run_linearfour_pretrain_mon():
+    r = RunnerWithIDs(command='python launchers/monolithic.py', gpus=[])
+    r.add_flag('env-name', ['LinABCD'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    r.add_flag('pretrain', [2450])    
+    if args.factorized:
+        r.add_flag('factorized', [True])
+    if args.parent != '':
+        parent_string = '\"{parent: ' + args.parent + '}\"'
+        r.add_flag('ckpts', [parent_string])
+    # if args.dqn:
+        # r.add_flag('alg_name', ['dqn'])
+    # if args.lr: 
+    #    r.add_flag('lr', [2e-3])
+    r.generate_commands(execute=args.for_real)
+
+def run_linearfour_pretrain_dec():
+    r = RunnerWithIDs(command='python launchers/decentralized.py', gpus=[])
+    r.add_flag('env-name', ['LinABCD'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    r.add_flag('pretrain', [2450])    
+    if args.parent != '':
+        parent_string = '\"{parent: ' + args.parent + '}\"'
+        r.add_flag('ckpts', [parent_string])
+    if args.shared_ccv:
+        r.add_flag('share-encoder', [True])
+    r.generate_commands(execute=args.for_real)
+
+def run_linearfour_rest_decent():
+
+    r = RunnerWithIDs(command='python launchers/vickrey_transfer.py', gpus=[])
+    r.add_flag('env-name', ['LinABCH'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    if args.parent != '':
+        parent_string = '\"{parent: ' + args.parent + '}\"'
+        r.add_flag('ckpts', [parent_string])
+    if args.shared_ccv:
+        r.add_flag('share-encoder', [True])
+    r.generate_commands(execute=args.for_real)
+
+def run_linearfour_rest_mon():
+    r = RunnerWithIDs(command='python launchers/transfer.py', gpus=[])
+    r.add_flag('env-name', ['LinABCH'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    if args.factorized:
+        r.add_flag('factorized', [True])
+    if args.parent != '':
+        parent_string = '\"{parent: ' + args.parent + '}\"'
+        r.add_flag('ckpts', [parent_string])
+    # if args.dqn:
+        # r.add_flag('alg_name', ['dqn'])
+    # if args.lr: 
+    #    r.add_flag('lr', [2e-3])
+    r.generate_commands(execute=args.for_real)
+
+def run_linearfive_pretrain_mon():
+    r = RunnerWithIDs(command='python launchers/monolithic.py', gpus=[])
+    r.add_flag('env-name', ['LinABCDE'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    r.add_flag('pretrain', [2450])    
+    if args.factorized:
+        r.add_flag('factorized', [True])
+    if args.parent != '':
+        parent_string = '\"{parent: ' + args.parent + '}\"'
+        r.add_flag('ckpts', [parent_string])
+    # if args.dqn:
+    #     r.add_flag('alg_name', ['dqn'])
+    # if args.lr: 
+    #    r.add_flag('lr', [2e-3])
+    r.generate_commands(execute=args.for_real)
+
+def run_linearfive_pretrain_dec():
+    r = RunnerWithIDs(command='python launchers/decentralized.py', gpus=[])
+    r.add_flag('env-name', ['LinABCDE'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    r.add_flag('pretrain', [2450])    
+    if args.parent != '':
+        parent_string = '\"{parent: ' + args.parent + '}\"'
+        r.add_flag('ckpts', [parent_string])
+    if args.shared_ccv:
+        r.add_flag('share-encoder', [True])
+    r.generate_commands(execute=args.for_real)
+
+def run_linearfive_rest_decent():
+
+    r = RunnerWithIDs(command='python launchers/vickrey_transfer.py', gpus=[])
+    r.add_flag('env-name', ['LinABCDJ'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    if args.parent != '':
+        parent_string = '\"{parent: ' + args.parent + '}\"'
+        r.add_flag('ckpts', [parent_string])
+    if args.shared_ccv:
+        r.add_flag('share-encoder', [True])
+    r.generate_commands(execute=args.for_real)
+
+def run_linearfive_rest_mon():
+    r = RunnerWithIDs(command='python launchers/transfer.py', gpus=[])
+    r.add_flag('env-name', ['LinABCDJ'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    if args.factorized:
+        r.add_flag('factorized', [True])
+    if args.parent != '':
+        parent_string = '\"{parent: ' + args.parent + '}\"'
+        r.add_flag('ckpts', [parent_string])
+    # if args.dqn:
+    #     r.add_flag('alg_name', ['dqn'])
+    # if args.lr: 
+    #    r.add_flag('lr', [2e-3])
     r.generate_commands(execute=args.for_real)
 
 
-def run_tworooms_transfer_task():
-    primitive_expids = [
-        'i9138938i_BAI-RGTRT-0_ppo',
-        'i2713858i_BAI-GGTRT-0_ppo',
-        'i0342222i_BAI-BGTRT-0_ppo',
-    ]
-    raise NotImplementedError('Replace primitive_expids with the corresponding folder names generated by pretrain_tworooms_subpolicies')
-    primitive_string = ' '.join(ujson.dumps(dict(primitive=expfolder)) for expfolder in primitive_expids).replace('"', '').replace('{', '\"{').replace('}', '}\"').replace(':', ': ')
-
-    monolithic_parent_string = '\"{parent: i0733954i_BAI-GTRT-0_ppo__using__9138938__and__2713858__and__342222}\"'
-    decentralized_parent_string = '\"{parent: i8905761i_BAI-GTRT-0_ccv_cln__using__9138938__and__2713858__and__342222}\"'
-
-    """
-    An example command would be:
-    `python launchers/hierarchical_monolithic_pretrained_primitives_transfer.py --env-name BabyAI-BlueTwoRoomTest-v0 --freeze_primitives --parallel_collect --primitives "{primitive: i9138938i_BAI-RGTRT-0_ppo}" "{primitive: i2713858i_BAI-GGTRT-0_ppo}" "{primitive: i0342222i_BAI-BGTRT-0_ppo}" --ckpts "{parent: i0733954i_BAI-GTRT-0_ppo__using__9138938__and__2713858__and__342222}" --subroot two_rooms`
-    """
-    r = RunnerWithIDs(command='python launchers/hierarchical_monolithic_pretrained_primitives_transfer.py', gpus=[0])
-    r.add_flag('env-name', ['BabyAI-BlueTwoRoomTest-v0'])
-    r.add_flag('freeze_primitives', [True])
+def run_linear_pretrain_mon():
+    r = RunnerWithIDs(command='python launchers/monolithic.py', gpus=[])
+    r.add_flag('env-name', ['LinABC'])
     r.add_flag('parallel_collect', [True])
-    r.add_flag('primitives', [primitive_string])
-    r.add_flag('ckpts', [monolithic_parent_string])
-    r.add_flag('subroot', ['two_rooms'])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    r.add_flag('pretrain', [2450])#, 6250, 31250])
+    if args.factorized:
+        r.add_flag('factorized', [True])
+    if args.parent != '':
+        parent_string = '\"{parent: ' + args.parent + '}\"'
+        r.add_flag('ckpts', [parent_string])
     r.generate_commands(execute=args.for_real)
 
-
-    """
-    An example command would be:
-    `python launchers/hierarchical_decentralized_pretrained_primitives_transfer.py --env-name BabyAI-BlueTwoRoomTest-v0 --freeze_primitives --parallel_collect --primitives "{primitive: i9138938i_BAI-RGTRT-0_ppo}" "{primitive: i2713858i_BAI-GGTRT-0_ppo}" "{primitive: i0342222i_BAI-BGTRT-0_ppo}" --ckpts "{parent: i8905761i_BAI-GTRT-0_ccv_cln__using__9138938__and__2713858__and__342222}" --subroot two_rooms`
-    """
-    r = RunnerWithIDs(command='python launchers/hierarchical_decentralized_pretrained_primitives_transfer.py', gpus=[0])
-    r.add_flag('env-name', ['BabyAI-BlueTwoRoomTest-v0'])
-    r.add_flag('freeze_primitives', [True])
+def run_linear_pretrain_dec():
+    r = RunnerWithIDs(command='python launchers/decentralized.py', gpus=[])
+    r.add_flag('env-name', ['LinABC'])
     r.add_flag('parallel_collect', [True])
-    r.add_flag('primitives', [primitive_string])
-    r.add_flag('ckpts', [decentralized_parent_string])
-    r.add_flag('subroot', ['two_rooms'])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [0,1,2,3,4,5,6,7,8,9])
+    r.add_flag('pretrain', [2450])#[1250, 6250, 31250])
+    if args.parent != '':
+        parent_string = '\"{parent: ' + args.parent + '}\"'
+        r.add_flag('ckpts', [parent_string])
+    if args.shared_ccv:
+        r.add_flag('share-encoder', [True])
+    if args.offpolicy:
+        r.add_flag('offpolicy', [True])
+        r.add_flag('alg-name', ['sac'])
+    if args.vlr: 
+        # r.add_flag('vlr', [1e-3, 7e-4, 5e-4, 3e-4])
+        r.add_flag('vlr', [1e-3])
     r.generate_commands(execute=args.for_real)
+
+def run_linear_rest_decent():
+
+    r = RunnerWithIDs(command='python launchers/vickrey_transfer.py', gpus=[])
+    r.add_flag('env-name', ['LinABD'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [0,1,2,3,4,5,6,7,8,9])
+    
+    # if args.parent != '':
+    #     parent_string = '\"{parent: ' + args.parent + '}\"'
+    #     r.add_flag('ckpts', [parent_string])
+    if args.parent != '':
+        # parent_string = '\"{parent: ' + args.parent + '}\"'
+        # r.add_flag('ckpts', [parent_string])
+        parentlst = list(args.parent.split(" ")) 
+        parentlstformatted = ['\"{parent: ' + par + '}\"' for par in parentlst]
+        r.add_flag('ckpts', [parstr for parstr in parentlstformatted])
+    if args.shared_ccv:
+        r.add_flag('share-encoder', [True])
+    if args.offpolicy:
+        r.add_flag('offpolicy', [True])
+        r.add_flag('alg-name', ['sac'])
+    if args.vlr: 
+        # r.add_flag('vlr', [1e-3, 7e-4, 5e-4, 3e-4])
+        r.add_flag('vlr', [1e-3])
+    r.generate_commands(execute=args.for_real)
+
+    r = RunnerWithIDs(command='python launchers/vickrey_transfer.py', gpus=[])
+    r.add_flag('env-name', ['LinAEC'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    # if args.parent != '':
+    #     parent_string = '\"{parent: ' + args.parent + '}\"'
+    #     r.add_flag('ckpts', [parent_string])
+    if args.parent != '':
+        # parent_string = '\"{parent: ' + args.parent + '}\"'
+        # r.add_flag('ckpts', [parent_string])
+        parentlst = list(args.parent.split(" ")) 
+        parentlstformatted = ['\"{parent: ' + par + '}\"' for par in parentlst]
+        r.add_flag('ckpts', [parstr for parstr in parentlstformatted])
+    if args.shared_ccv:
+        r.add_flag('share-encoder', [True])
+    if args.offpolicy:
+        r.add_flag('offpolicy', [True])
+        r.add_flag('alg-name', ['sac'])
+    if args.vlr: 
+        # r.add_flag('vlr', [1e-3, 7e-4, 5e-4, 3e-4])
+        r.add_flag('vlr', [1e-3])
+    r.generate_commands(execute=args.for_real)  
+
+    r = RunnerWithIDs(command='python launchers/vickrey_transfer.py', gpus=[])
+    r.add_flag('env-name', ['LinFBC'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    # if args.parent != '':
+    #     parent_string = '\"{parent: ' + args.parent + '}\"'
+    #     r.add_flag('ckpts', [parent_string])
+    if args.parent != '':
+        # parent_string = '\"{parent: ' + args.parent + '}\"'
+        # r.add_flag('ckpts', [parent_string])
+        parentlst = list(args.parent.split(" ")) 
+        parentlstformatted = ['\"{parent: ' + par + '}\"' for par in parentlst]
+        r.add_flag('ckpts', [parstr for parstr in parentlstformatted])
+    if args.shared_ccv:
+        r.add_flag('share-encoder', [True])
+    if args.offpolicy:
+        r.add_flag('offpolicy', [True])
+        r.add_flag('alg-name', ['sac'])
+    if args.vlr: 
+        # r.add_flag('vlr', [1e-3, 7e-4, 5e-4, 3e-4])
+        r.add_flag('vlr', [1e-3])
+    r.generate_commands(execute=args.for_real)
+
+def run_linear_rest_mon():
+    r = RunnerWithIDs(command='python launchers/transfer.py', gpus=[])
+    r.add_flag('env-name', ['LinABD'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    # r.add_flag('seed', [0,1,2,3,4,5,6,7,8])
+    r.add_flag('seed', [i for i in range(10)])
+    if args.factorized:
+        r.add_flag('factorized', [True])
+    if args.parent != '':
+        # parent_string = '\"{parent: ' + args.parent + '}\"'
+        # r.add_flag('ckpts', [parent_string])
+        parentlst = list(args.parent.split(" ")) 
+        parentlstformatted = ['\"{parent: ' + par + '}\"' for par in parentlst]
+        r.add_flag('ckpts', [parstr for parstr in parentlstformatted])
+    r.generate_commands(execute=args.for_real)
+
+    r = RunnerWithIDs(command='python launchers/transfer.py', gpus=[])
+    r.add_flag('env-name', ['LinAEC'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    if args.factorized:
+        r.add_flag('factorized', [True])
+    if args.parent != '':
+        # parent_string = '\"{parent: ' + args.parent + '}\"'
+        # r.add_flag('ckpts', [parent_string])
+        parentlst = list(args.parent.split(" ")) 
+        parentlstformatted = ['\"{parent: ' + par + '}\"' for par in parentlst]
+        r.add_flag('ckpts', [parstr for parstr in parentlstformatted])
+    r.generate_commands(execute=args.for_real)
+
+    r = RunnerWithIDs(command='python launchers/transfer.py', gpus=[])
+    r.add_flag('env-name', ['LinFBC'])
+    r.add_flag('parallel_collect', [True])
+    r.add_flag('subroot', ['tab_runs'])
+    r.add_flag('seed', [i for i in range(10)])
+    if args.factorized:
+        r.add_flag('factorized', [True])
+    if args.parent != '':
+        # parent_string = '\"{parent: ' + args.parent + '}\"'
+        # r.add_flag('ckpts', [parent_string])
+        parentlst = list(args.parent.split(" ")) 
+        parentlstformatted = ['\"{parent: ' + par + '}\"' for par in parentlst]
+        r.add_flag('ckpts', [parstr for parstr in parentlstformatted])
+    r.generate_commands(execute=args.for_real)
+
 
 
 
 if __name__ == '__main__':
+    if args.debug:
+        run_debug()
     if args.bandit:
         run_bandit()
-    if args.chain:
-        run_chain()
-    if args.duality:
-        run_duality()
-    if args.mental_rotation:
-        run_mental_rotation()
-    if args.tworooms_subpolicies:
-        run_tworooms_subpolicies()
-    if args.tworooms_pretrain_task:
-        run_tworooms_pretrain_task()
-    if args.tworooms_transfer_task:
-        run_tworooms_transfer_task()
+    if args.bandittransfer:
+        run_bandit_transfer()
+    if args.bandit_dec:
+        run_bandit_dec()
+    if args.bandittransfer_dec:
+        run_bandit_transfer_dec()
+    if args.invarV1_decent:
+        run_invarV1_decent()
+    if args.invarV1_mon:
+        run_invarV1_mon()
+    if args.invarV2_decent:
+        run_invarV2_decent()
+    if args.invarV2_mon:
+        run_invarV2_mon()
+    if args.invarV1Prime_decent:
+        run_invarV1Prime_decent()
+    if args.invarV1Prime_mon:
+        run_invarV1Prime_mon()
+    if args.commonancpretrain_mon:
+        run_commonanc_pretrain_mon()
+    if args.commonancpretrain_dec:
+        run_commonanc_pretrain_dec()
+    if args.commondecpretrain_mon:
+        run_commondec_pretrain_mon()
+    if args.commondecpretrain_dec:
+        run_commondec_pretrain_dec()
+    if args.commonancrest_mon:
+        run_commonanc_rest_mon()
+    if args.commondecrest_mon:
+        run_commondec_rest_mon()    
+    if args.commonancrest_decent:
+        run_commonanc_rest_decent()
+    if args.commondecrest_decent:
+        run_commondec_rest_decent()   
+    if args.linearpretrain_mon:
+        run_linear_pretrain_mon()
+    if args.linearpretrain_dec:
+        run_linear_pretrain_dec()
+    if args.linearrest_mon:
+        run_linear_rest_mon()
+    if args.linearrest_decent:
+        run_linear_rest_decent()

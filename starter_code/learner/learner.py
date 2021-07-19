@@ -48,13 +48,13 @@ class Learner():
         self.device = device
         self.args = args
         self.parallel_collect = args.parallel_collect
-        self.logger.printf(self.organism)
+        # self.logger.printf(self.organism)
 
         self.steps = 0
         self.min_return = np.inf
         self.max_return = -np.inf
 
-    def collect_samples(self, epoch, env_manager):
+    def collect_samples(self, epoch, max_episode_length, env):
         ######################################################
         # initialize
         ######################################################
@@ -70,8 +70,8 @@ class Learner():
             epoch=epoch,
             max_steps=self.rl_alg.num_samples_before_update,
             objects=dict(
-                max_episode_length=env_manager.max_episode_length,
-                env=env_manager.env,
+                max_episode_length=max_episode_length,
+                env=env,
                 stats_collector_builder=self.stats_collector_builder,
                 sampler=self.sampler,
                 organism=self.organism,
@@ -117,24 +117,37 @@ class Learner():
             print('After')
             self.organism.visualize_parameters(self.logger.printf)
 
-    def test(self, epoch, env_manager, num_test):
+    def collect_episodes(self, env, max_episode_length, num_episodes):
         stats_collector = self.stats_collector_builder()
-        for i in range(num_test):
+        for i in range(num_episodes):
             with torch.no_grad():
-                env_manager.env.seed(int(1e8)*self.args.seed+epoch)
                 episode_data = self.sampler.sample_episode(
-                    env=env_manager.env,
-                    max_steps_this_episode=env_manager.max_episode_length,
+                    env=env,
+                    max_steps_this_episode=max_episode_length,
                     render=True)
-                if epoch % self.args.visualize_every == 0:
-                    if i == 0 and self.organism.discrete:
-                        self.get_qualitative_output(
-                            env_manager, self.sampler, episode_data, epoch, i)
             stats_collector.append(episode_data)
+        return stats_collector
+
+    def test(self, epoch, env_manager, num_test):
+        train_deterministic = self.sampler.deterministic
+        self.sampler.set_deterministic(True)
+        env_manager.env.seed(int(1e8)*self.args.seed+epoch)
+        # import pdb; pdb.set_trace()
+        stats_collector = self.collect_episodes(
+            env=env_manager.env, 
+            max_episode_length=env_manager.max_episode_length,
+            num_episodes=num_test)
+        if epoch % self.args.visualize_every == 0 and self.organism.discrete:
+            self.get_qualitative_output(
+                env_manager, self.sampler, stats_collector[0], epoch, 0)
+            # self.get_qualitative_output(
+            #                 env_manager, self.sampler, episode_data, epoch, i)
         stats = stats_collector.bundle_batch_stats()
+        self.sampler.set_deterministic(train_deterministic)
         return stats
 
     def get_qualitative_output(self, env_manager, sampler, episode_data, epoch, i):
+        from starter_code.infrastructure.log import HanoiEnvManager
         if env_manager.visual:
             bids = sampler.get_bids_for_episode(episode_data)
             returns = sum([e.reward for e in episode_data])
@@ -155,3 +168,6 @@ class Learner():
                             bids_dict[j]=[]
                         bids_dict[j].append(bid)
                 env_manager.save_video(epoch, i , bids_dict, returns_low_level, frames_low_level, '_low_level')
+        
+
+

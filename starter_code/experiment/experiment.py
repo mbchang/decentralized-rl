@@ -16,12 +16,16 @@ class Experiment():
             if epoch % self.args.eval_every == 0:
                 self.eval_step(epoch)
             self.train_step(epoch)
+            
         self.finish_training()
 
     def train_step(self, epoch):
         assert len(self.task_progression) == 1
         train_env_manager = self.task_progression.sample(i=epoch, mode='train')
-        epoch_stats = self.learner.collect_samples(epoch, train_env_manager)
+        epoch_stats = self.learner.collect_samples(
+            epoch=epoch, 
+            max_episode_length=train_env_manager.max_episode_length, 
+            env=train_env_manager.env)
         if epoch % self.args.log_every == 0:
             self.logger.printf(format_log_string(self.log(epoch, epoch_stats, mode='train')))
         if epoch % self.args.visualize_every == 0:
@@ -29,6 +33,7 @@ class Experiment():
         if epoch % self.args.save_every == 0:
             self.save(train_env_manager, epoch, epoch_stats)
         self.learner.update(epoch)
+
 
     def eval_step(self, epoch):
         self.logger.printf('Evaluating...')

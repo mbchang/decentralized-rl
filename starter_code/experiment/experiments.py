@@ -68,3 +68,27 @@ class TabularExperiment(DecentralizedExperiment):
         state_metrics = ['mean_bid', 'mean_payoff']
         self.update_state_metrics(env_manager, epoch, stats, state_metrics)
         self.plot_state_metrics(env_manager, stats, env_manager.env_name, state_metrics)
+
+class TabularExperimentCentralized(Experiment):
+    def __init__(self, learner, task_progression, logger, args):
+        super(TabularExperimentCentralized, self).__init__(learner, task_progression, logger, args)
+        self.states_encountered = set()
+
+    def update_state_metrics(self, env_manager, epoch, stats, state_metrics):
+        # import pdb; pdb.set_trace()
+        for metric in state_metrics:
+            for state in stats['state_stats']:
+                env_manager.record_state_variable(state, self.learner.steps, stats['state_stats'][state], metric)
+
+    def plot_state_metrics(self, env_manager, stats, name, state_metrics):
+        for metric in state_metrics:
+            for state in stats['state_stats']:
+                env_manager.visualize_data(state=state, title='{} state {}'.format('_'.join(self.args.env_name), state), metric=metric)
+        # import pdb; pdb.set_trace()
+        env_manager.save_json('agent_state_stats.json')
+
+    def visualize(self, env_manager, epoch, stats, name, eval_mode=False):
+        Experiment.visualize(self, env_manager, epoch, stats, name, eval_mode)
+        state_metrics = ['mean_action_dist']
+        self.update_state_metrics(env_manager, epoch, stats, state_metrics)
+        self.plot_state_metrics(env_manager, stats, env_manager.env_name, state_metrics)

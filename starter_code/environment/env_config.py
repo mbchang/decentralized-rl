@@ -9,9 +9,7 @@ import pprint
 import torch
 import torch.nn.functional as F
 
-from mnist.mnist_env import mnist_loss_01, MentalRotation
-from starter_code.environment.envs import OneStateOneStepKActionEnv, OneHotChainK, Duality
-from starter_code.environment.computation_envs import ComputationEnv, VisualComputationEnv
+from starter_code.environment.envs import *
 
 
 class EnvInfo():
@@ -105,9 +103,47 @@ class EnvRegistry():
             },
             'tab': {
                 'Bandit': dict(constructor=lambda: OneStateOneStepKActionEnv(4)),
+                'BanditTransfer': dict(constructor=lambda: OneStateOneStepKActionEnvTransfer(4)),
+                'LinBandit': dict(constructor=lambda: MultiTaskDebugTaskBanditA),
+                'LinBanditTransfer': dict(constructor=lambda: MultiTaskDebugTaskBanditD),
                 'Chain': dict(constructor=lambda: OneHotChainK(6)),
                 'Duality': dict(constructor=lambda: Duality(absorbing_reward=-1, asymmetric_coeff=1, big_reward=0.5, small_reward=0.3)), 
-            }
+                'InvarV1': dict(constructor=MultiTaskDebugTaskTwoStepInvarianceV1),
+                'InvarV2': dict(constructor=MultiTaskDebugTaskTwoStepInvarianceV2),
+                'ParallelV1': dict(constructor=MultiTaskDebugTaskTwoStepParallelismV1),
+                'ParallelV2': dict(constructor=MultiTaskDebugTaskTwoStepParallelismV2),
+                'ComAncAB': dict(constructor=MultiTaskDebugCommonAncestorAB),
+                'ComAncAC': dict(constructor=MultiTaskDebugCommonAncestorAC),
+                'ComAncAE': dict(constructor=MultiTaskDebugCommonAncestorAE),
+                'ComAncAF': dict(constructor=MultiTaskDebugCommonAncestorAF),
+                'ComAncDB': dict(constructor=MultiTaskDebugCommonAncestorDB),
+                'ComAncDC': dict(constructor=MultiTaskDebugCommonAncestorDC),
+                'ComDescAC': dict(constructor=MultiTaskDebugCommonDecendantAC),
+                'ComDescBC': dict(constructor=MultiTaskDebugCommonDecendantBC),
+                'ComDescDC': dict(constructor=MultiTaskDebugCommonDecendantDC),
+                'ComDescEC': dict(constructor=MultiTaskDebugCommonDecendantEC),
+                'ComDescAF': dict(constructor=MultiTaskDebugCommonDecendantAF),
+                'ComDescBF': dict(constructor=MultiTaskDebugCommonDecendantBF),
+                'LinABC': dict(constructor=MultiTaskDebugTaskABCSIX),
+                'LinABD': dict(constructor=MultiTaskDebugTaskABDSIX),
+                'LinAEC': dict(constructor=MultiTaskDebugTaskAECSIX),
+                'LinFBC': dict(constructor=MultiTaskDebugTaskFBCSIX),
+                'LinABCD': dict(constructor=MultiTaskDebugTaskABCDLenFOUR),
+                'LinABCH': dict(constructor=MultiTaskDebugTaskABCHLenFOUR),
+                'LinABCDE': dict(constructor=MultiTaskDebugTaskABCDELenFIVE),
+                'LinABCDJ': dict(constructor=MultiTaskDebugTaskABCDJLenFIVE),
+                'ABCEDPretrain' : dict(constructor= ABCEDPretrain),
+                'ABEDTransfer' : dict(constructor= ABEDTransfer),
+                'CondensedLinearABC': dict(constructor = CondensedLinearABC),
+                'CondensedLinearABCV2': dict(constructor = CondensedLinearABCV2),
+                'CondensedLinearABD': dict(constructor = CondensedLinABD),
+                'CondensedLinearAEC': dict(constructor = CondensedLinAEC),
+                'CondensedLinearFBC': dict(constructor = CondensedLinFBC),
+                'LinearOneHotABC': dict(constructor = LinearOneHotABC),
+                'LinearOneHotABD': dict(constructor = LinearOneHotABD),
+                'LinearOneHotAEC': dict(constructor = LinearOneHotAEC),
+                'LinearOneHotFBC': dict(constructor = LinearOneHotFBC),
+            },
         }
 
         self.typecheck(self.envs_type_name)

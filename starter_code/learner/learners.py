@@ -7,7 +7,7 @@ from starter_code.sampler.decentralized_sampler import DecentralizedSampler
 from starter_code.sampler.domain_specific_temporary_buffers import DecentralizedHRLStatsCollector, DecentralizedTabularStatsCollector
 from starter_code.sampler.hierarchy_utils import is_hierarchical
 from starter_code.sampler.sampler import Sampler
-from starter_code.sampler.temporary_buffer import DecentralizedStatsCollector, StatsCollector
+from starter_code.sampler.temporary_buffer import DecentralizedStatsCollector, StatsCollector, CentralizedStatsCollector
 
 
 def computation_sampler_builder(base_class):
@@ -31,12 +31,20 @@ class CentralizedLearner(Learner):
         else:
             sampler_builder = Sampler
 
+        if organism.args.envtype=='tab':
+            self.stats_collector_builder = CentralizedStatsCollector
+        # elif organism.args.envtype=='BabyAI' or organism.args.envtype=='mg': 
+        #     # import pdb; pdb.set_trace()
+        #     self.stats_collector_builder = CentralizedHRLStatsCollector
+        else:
+            self.stats_collector_builder = StatsCollector
+
         if organism.transformation_type == 'SubpolicyTransformation':
             step_info = OptionStepInfo
         else:
             step_info = AgentStepInfo
 
-        self.stats_collector_builder = StatsCollector
+        # self.stats_collector_builder = StatsCollector
         self.sampler = sampler_builder(
             organism=organism,
             step_info=step_info,

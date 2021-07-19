@@ -28,7 +28,7 @@ def ppo_config(args):
 def experiment_config(args):
     args.gpu_index = 0
 
-    args.max_epochs = int(1e7)
+    args.max_epochs = args.pretrain#int(1e7)
     args.num_test = 10
     args.log_every = 10
     args.save_every = 50
@@ -60,10 +60,7 @@ def hierarchical_config(args):
     return args
 
 def network_config(args):
-    if args.debug:
-        args.hdim = [20, 20]
-    else:
-        args.hdim = [16]
+    args.hdim = [20, 20]
     return args
 
 def training_config(args):

@@ -122,6 +122,8 @@ class Saver(object):
         torch.save(state_dict, ckpt_name)
         self.save_summary()
         pfunc('Saved to {}.'.format(ckpt_name))
+        self.evict(pfunc)
+
 
     def save_summary(self):
         most_recent = os.path.basename(heapq.nlargest(1, self.most_recents)[0][-1])
@@ -130,7 +132,7 @@ class Saver(object):
             csv_writer = csv.DictWriter(f, fieldnames=['recent', 'best'])
             csv_writer.writerow({'recent': most_recent, 'best': best})
 
-    def evict(self):
+    def evict(self, pfunc):
         to_evict = set()
         if len(self.most_recents) > self.heapsize:
             most_recents = [x[-1] for x in heapq.nlargest(1, self.most_recents)]
@@ -141,10 +143,12 @@ class Saver(object):
 
             # only evict least_recent if it is not in highest_returns
             if least_recent not in higest_returns and os.path.exists(least_recent):
+                pfunc('Evicted Least Recent: {}'.format(least_recent))
                 os.remove(least_recent)
             # only evict lowest_return if it is not in lowest_return
             if lowest_return not in most_recents and os.path.exists(lowest_return):
                 os.remove(lowest_return)
+                pfunc('Evicted Lowest Return: {}'.format(lowest_return))
 
 
 class BaseLogger(object):
@@ -587,6 +591,78 @@ class MinigridEnvManager(VisualEnvManager):
                 plt.savefig(os.path.join(self.quantitative_dir,'_roombasedbids_room{}.png'.format(room)))
                 plt.close()
 
+    def save_action_prob_by_room(self, room_stats, epoch):
+        def create_room_group(hf, room, a_ids):
+            roomgrp = hf.create_group(room)
+            for a_id in a_ids:
+                agent = roomgrp.create_group(a_id)
+                agent.create_dataset('action_dist', data=np.array([]),  maxshape=(5000, ))
+                # agent.create_dataset('bids', data=np.array([]),  maxshape=(5000, ))
+            return hf
+
+        filename = os.path.join(self.quantitative_dir,'room_action_probs.h5')
+        if not os.path.isfile(filename):
+            hf = h5py.File(filename, 'w')
+            for room in room_stats:
+                hf = create_room_group(hf, room, room_stats[room].keys())
+        with h5py.File(filename, 'a') as hf:
+            for room in room_stats:
+                if room not in hf.keys():
+                    hf = create_room_group(hf, room, room_stats[room].keys())
+                roomgrp = hf[room]
+                for a_id in room_stats[room]:
+                    agent= roomgrp[a_id]
+                    payoffs = agent['action_dist']
+                    newpayoffsize = payoffs.shape[0]+1
+                    payoffs.resize((newpayoffsize,))
+                    payoffs[newpayoffsize-1]=room_stats[room][a_id]['action_dist']
+                    # bids= agent['bids']
+                    # newbidsize = bids.shape[0]+1
+                    # bids.resize((newbidsize,))
+                    # bids[newbidsize-1]=room_stats[room][a_id]['bid']
+
+
+    def visualize_action_probs(self, room_stats, epoch):
+        ''' Plot bids and payoffs of agents by room from data collected in room_bids_payoffs.h5 '''
+        self.save_action_prob_by_room(room_stats, epoch)
+        filename = os.path.join(self.quantitative_dir,'room_action_probs.h5')
+        x_val = np.array(list(range(epoch+1)))
+        with h5py.File(filename, 'r') as hf:
+            for room in room_stats:
+                plt.figure()
+                roomgrp = hf[room]
+                for a_id in room_stats[room]:
+                    agent= roomgrp[a_id]
+                    payoffs = agent['action_dist']
+                    try:
+                        payoff_vals= np.array(payoffs)
+                        plt.plot(np.array(list(range(len(payoff_vals)))), payoff_vals, label='Agent '+a_id)
+                    except:
+                        print('Room 1 action_prob is not recorded')
+                plt.title('Action Probs for Room ' + room)
+                plt.xlabel('Epochs')
+                plt.ylabel('Bids')
+                plt.legend()
+                plt.savefig(os.path.join(self.quantitative_dir,'_roombasedactionprobs_room{}.png'.format(room)))
+                plt.close()
+
+            # for room in room_stats:
+            #     plt.figure()
+            #     roomgrp = hf[room]
+            #     for a_id in room_stats[room]:
+            #         agent= roomgrp[a_id]
+            #         bids = agent['bids']
+            #         try:
+            #             bid_vals = np.array(bids)
+            #             plt.plot(np.array(list(range(len(bid_vals)))), bid_vals, label='Agent '+a_id)
+            #         except:
+            #             print('Room 1 bids not recorded')
+            #     plt.title('Bids for Room ' + room)
+            #     plt.xlabel('Epochs')
+            #     plt.ylabel('Bids')
+            #     plt.legend()
+            #     plt.savefig(os.path.join(self.quantitative_dir,'_roombasedbids_room{}.png'.format(room)))
+            #     plt.close()
 
 def log_string(ordered_dict):
     s = ''
@@ -611,9 +687,15 @@ def renderfn(env, scale):
     frame = env.render(mode='rgb_array')
 
     if frame is not None:
-        h, w, c = frame.shape
-        frame = cv2.resize(frame, dsize=(int(w*scale), int(h*scale)), interpolation=cv2.INTER_CUBIC)
-        return frame
+        if isinstance(frame, np.ndarray):
+            h, w, c = frame.shape
+            frame = cv2.resize(frame, dsize=(int(w*scale), int(h*scale)), interpolation=cv2.INTER_CUBIC)
+            return frame
+        elif isinstance(frame, str):
+            return frame
+        else:
+            assert False
+        
 
 
 def env_manager_switch(env_name, env_registry):
